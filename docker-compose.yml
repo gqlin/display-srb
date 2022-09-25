@@ -1,0 +1,141 @@
+version: "3.8"
+
+services:
+
+  nacos:
+    privileged: true
+    image: nacos/nacos-server:latest      # 镜像`nacos/nacos-server:latest`
+    container_name: nacos-standalone-mysql   # 容器名为nacos-standalone-mysql
+    #restart: always                # 指定容器退出后的重启策略为始终重启
+    restart: "no"
+    volumes: # 数据卷挂载路径设置,将本机目录映射到容器目录
+      - "/myData/backend/projectLogs/srb/nacos:/home/nacos/logs"
+    environment: # 设置环境变量,相当于docker run命令中的-e
+      - PREFER_HOST_MODE=hostname           # 是否支持hostname
+      - MODE=standalone                     # 单机模式启动
+      - SPRING_DATASOURCE_PLATFORM=mysql
+      - MYSQL_SERVICE_HOST=yourserverip       # 注：这里不能为`127.0.0.1`或`localhost`方式！！！
+      - MYSQL_SERVICE_DB_NAME=nacos_config  # 所需sql脚本位于 `nacos-mysql/nacos-mysql.sql`
+      - MYSQL_SERVICE_PORT=yourmysqlport
+      - MYSQL_SERVICE_USER=root
+      - MYSQL_SERVICE_PASSWORD=yourpassword
+      - MYSQL_SERVICE_DB_PARAM=characterEncoding=utf8&connectTimeout=1000&socketTimeout=3000&autoReconnect=true&useSSL=false&allowPublicKeyRetrieval=true
+      # JVM调优参数
+      - JAVA_OPTS=-XX:MetaspaceSize=60m -XX:MaxMetaspaceSize=60m -Xms260m -Xmx260m -Xmn100m
+      - NACOS_DEBUG=n #是否开启远程debug，y/n，默认n
+      - TOMCAT_ACCESSLOG_ENABLED=false #是否开始tomcat访问日志的记录，默认false
+    ports: # 映射端口
+      - "8848:8848"
+
+  sentinel:
+    privileged: true
+    image: bladex/sentinel-dashboard:latest
+    container_name: sentinel   # 容器名为nacos-standalone-mysql
+    #restart: always                # 指定容器退出后的重启策略为始终重启
+    restart: "no"
+    environment: # 设置环境变量,相当于docker run命令中的-e
+      # JVM调优参数
+      - JAVA_OPTS=-XX:MetaspaceSize=30m -XX:MaxMetaspaceSize=30m -Xms80m -Xmx80m -Xmn30m
+      - sentinel.dashboard.auth.username=root
+      - sentinel.dashboard.auth.password=yourpassword
+    ports: # 映射端口
+      - "yoursentineldashboardip:yoursentineldashboardip"
+
+# 以下分为另外一个docker-compose.yml文件，不然启动会有问题
+# 这里为了方便，把另外一个docker-compose.yml的内容也写在这里
+  srbcore:
+    privileged: true
+    image: srbcore:latest
+    container_name: srbcore
+    #restart: always    # 指定容器退出后的重启策略为始终重启
+    restart: "no"
+    volumes:
+      - "/myData/backend/projectLogs/srb/core:/myData/backend/projectLogs/srb/core"
+      #environment: # 设置环境变量,相当于docker run命令中的-e
+      #JVM调优参数
+      #- JAVA_OPTS=-XX:MetaspaceSize=160m -XX:MaxMetaspaceSize=160m -Xms300m -Xmx300m -Xmn180m
+    ports:
+      - "8110:8110"
+
+  srbsms:
+    privileged: true
+    image: srbsms:latest
+    container_name: srbsms
+    #restart: always    # 指定容器退出后的重启策略为始终重启
+    restart: "no"
+    volumes:
+      - "/myData/backend/projectLogs/srb/sms:/myData/backend/projectLogs/srb/sms"
+    environment: # 设置环境变量,相当于docker run命令中的-e
+      # JVM调优参数
+      - JAVA_OPTS=-XX:MetaspaceSize=100m -XX:MaxMetaspaceSize=100m -Xms200m -Xmx200m -Xmn140m
+    ports:
+      - "8120:8120"
+
+  srboss:
+    privileged: true
+    image: srboss:latest
+    container_name: srboss
+    #restart: always    # 指定容器退出后的重启策略为始终重启
+    restart: "no"
+    volumes:
+      - "/myData/backend/projectLogs/srb/oss:/myData/backend/projectLogs/srb/oss"
+    environment: # 设置环境变量,相当于docker run命令中的-e
+      # JVM调优参数
+      - JAVA_OPTS=-XX:MetaspaceSize=100m -XX:MaxMetaspaceSize=100m -Xms200m -Xmx200m -Xmn150m
+    ports:
+      - "8130:8130"
+
+  srbjobs:
+    privileged: true
+    image: srbjobs:latest
+    container_name: srbjobs
+    #restart: always    # 指定容器退出后的重启策略为始终重启
+    restart: "no"
+    volumes:
+      - "/myData/backend/projectLogs/srb/jobs:/myData/backend/projectLogs/srb/jobs"
+    environment: # 设置环境变量,相当于docker run命令中的-e
+      # JVM调优参数
+      - JAVA_OPTS=-XX:MetaspaceSize=60m -XX:MaxMetaspaceSize=60m -Xms180m -Xmx180m -Xmn150m
+    ports:
+      - "8140:8140"
+
+  srbuaa:
+    privileged: true
+    image: srbuaa:latest
+    container_name: srbuaa
+    #restart: always    # 指定容器退出后的重启策略为始终重启
+    restart: "no"
+    volumes:
+      - "/myData/backend/projectLogs/srb/uaa:/myData/backend/projectLogs/srb/uaa"
+    environment: # 设置环境变量,相当于docker run命令中的-e
+      # JVM调优参数
+      - JAVA_OPTS=-XX:MetaspaceSize=70m -XX:MaxMetaspaceSize=70m -Xms150m -Xmx150m -Xmn100m
+    ports:
+      - "8150:8150"
+
+  srbgateway:
+    privileged: true
+    image: srbgateway:latest
+    container_name: srbgateway
+    #restart: always    # 指定容器退出后的重启策略为始终重启
+    restart: "no"
+    volumes:
+      - "/myData/backend/projectLogs/srb/gateway:/myData/backend/projectLogs/srb/gateway"
+    environment: # 设置环境变量,相当于docker run命令中的-e
+      # JVM调优参数
+      - JAVA_OPTS=-XX:MetaspaceSize=100m -XX:MaxMetaspaceSize=100m -Xms200m -Xmx200m -Xmn140m
+    ports:
+      - "10010:10010"
+
+  srbhfb:
+    privileged: true
+    image: hfb:latest
+    container_name: hfb
+    #restart: always    # 指定容器退出后的重启策略为始终重启
+    restart: "no"
+    environment: # 设置环境变量,相当于docker run命令中的-e
+      # JVM调优参数
+      - JAVA_OPTS=-XX:MetaspaceSize=80m -XX:MaxMetaspaceSize=80m -Xms200m -Xmx200m -Xmn150m
+    ports:
+      - "9999:9999"
+
